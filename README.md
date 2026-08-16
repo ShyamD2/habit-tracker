@@ -4,6 +4,10 @@ A self-contained, full-featured habit tracker built with **Python (Flask)**
 and **SQLite** — no external database or account required. Runs entirely on
 your machine.
 
+## Output
+
+![Output Screenshot](./Screenshot.png)
+
 ## Features
 
 - **Flexible scheduling** — track a habit every day, on specific weekdays
