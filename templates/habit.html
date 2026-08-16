@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ habit.name }} · Habit Tracker{% endblock %}
+{% block content %}
+<a class="back-link" href="/">&larr; Back to all habits</a>
+<h1><span class="dot" style="background:{{ habit.color }}; display:inline-block; margin-right:8px;"></span>{{ habit.name }}</h1>
+<p class="subtitle">Last 12 weeks</p>
+
+<div class="card">
+    <div class="cal-grid" style="--habit-color: {{ habit.color }};">
+        {% for week in weeks %}
+        <div class="cal-week">
+            {% for day in week %}
+            <div class="cal-day {{ 'done' if day.done else '' }}" style="{{ 'background:' ~ habit.color ~ ';' if day.done else '' }}" title="{{ day.date }}{{ ' ✓' if day.done else '' }}"></div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="stat-grid">
+        <div class="stat-box">
+            <div class="stat-num">🔥 {{ habit.current_streak }}</div>
+            <div class="stat-label">Current streak</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-num">{{ habit.best_streak }}</div>
+            <div class="stat-label">Best streak</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-num">{{ habit.total_completions }}</div>
+            <div class="stat-label">Total check-ins</div>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+    <form action="/toggle/{{ habit.id }}" method="post">
+        <input type="hidden" name="next" value="/habit/{{ habit.id }}">
+        <button type="submit" class="{{ 'btn' if not habit.done_today else 'btn btn-outline' }}">
+            {{ 'Mark today as not done' if habit.done_today else 'Mark today as done ✓' }}
+        </button>
+    </form>
+    <form action="/delete/{{ habit.id }}" method="post" onsubmit="return confirm('Delete this habit and all its history?');">
+        <button type="submit" class="btn btn-danger btn-sm">Delete habit</button>
+    </form>
+</div>
+{% endblock %}

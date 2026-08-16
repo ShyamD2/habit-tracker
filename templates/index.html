@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Habit Tracker{% endblock %}
+{% block content %}
+<h1>✅ Habit Tracker</h1>
+<p class="subtitle">Build streaks. Don't break the chain.</p>
+
+<div class="card">
+    <form class="add-form" action="/add" method="post">
+        <input type="text" name="name" placeholder="New habit, e.g. Read 10 pages" required>
+        <input type="color" name="color" value="#6366f1" title="Pick a color">
+        <button type="submit">Add</button>
+    </form>
+</div>
+
+<div class="card">
+    {% if habits %}
+        {% for h in habits %}
+        <div class="habit-row">
+            <span class="dot" style="background:{{ h.color }};"></span>
+            <div class="habit-info">
+                <div class="habit-name"><a href="/habit/{{ h.id }}">{{ h.name }}</a></div>
+                <div class="habit-meta">
+                    <span class="streak-badge">🔥 {{ h.current_streak }} day{{ 's' if h.current_streak != 1 else '' }}</span>
+                    best {{ h.best_streak }} · {{ h.total_completions }} total
+                </div>
+            </div>
+            <div class="row-actions">
+                <form action="/toggle/{{ h.id }}" method="post">
+                    <button type="submit" class="check-btn {{ 'done' if h.done_today else '' }}" title="Mark today done">
+                        {{ '✓' if h.done_today else '' }}
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="empty">No habits yet. Add your first one above!</p>
+    {% endif %}
+</div>
+{% endblock %}

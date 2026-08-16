@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Habit Tracker{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">&#10022;</div>
+      <div class="brand-text">
+        <div class="brand-name">HabitFlow</div>
+        <div class="brand-sub">Advanced Tracker</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <a href="{{ url_for('dashboard') }}" class="nav-item {{ 'active' if request.path == '/' }}">
+        <span class="nav-icon">&#9635;</span> Dashboard
+      </a>
+      <a href="{{ url_for('analytics_page') }}" class="nav-item {{ 'active' if request.path == '/analytics' }}">
+        <span class="nav-icon">&#128202;</span> Analytics
+      </a>
+      <a href="{{ url_for('habit_new') }}" class="nav-item">
+        <span class="nav-icon">&#10133;</span> New Habit
+      </a>
+      <a href="{{ url_for('export_csv') }}" class="nav-item">
+        <span class="nav-icon">&#8595;</span> Export CSV
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="today-pill">{{ current_year }}</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-stack">
+        {% for category, message in messages %}
+          <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

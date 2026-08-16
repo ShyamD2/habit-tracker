@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if habit else 'New' }} Habit · Habit Tracker{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="kicker"><a href="{{ url_for('dashboard') }}" class="back-link">&larr; Dashboard</a></div>
+    <h1>{{ 'Edit Habit' if habit else 'New Habit' }}</h1>
+  </div>
+</div>
+
+<form class="form-card" method="post">
+  <div class="form-row">
+    <label>Habit Name</label>
+    <input type="text" name="name" required placeholder="e.g. Morning Meditation"
+           value="{{ habit.name if habit else '' }}">
+  </div>
+
+  <div class="form-row">
+    <label>Description</label>
+    <textarea name="description" rows="2" placeholder="Optional notes about this habit">{{ habit.description if habit else '' }}</textarea>
+  </div>
+
+  <div class="form-grid">
+    <div class="form-row">
+      <label>Category</label>
+      <input type="text" name="category" placeholder="Health, Growth, Fitness..."
+             value="{{ habit.category if habit else 'General' }}">
+    </div>
+    <div class="form-row">
+      <label>Target Quantity</label>
+      <input type="number" name="target_quantity" min="1" value="{{ habit.target_quantity if habit else 1 }}">
+    </div>
+    <div class="form-row">
+      <label>Unit</label>
+      <input type="text" name="unit" placeholder="glasses, pages, minutes..."
+             value="{{ habit.unit if habit else '' }}">
+    </div>
+  </div>
+
+  <div class="form-row">
+    <label>Color</label>
+    <div class="swatch-row">
+      {% for c in colors %}
+      <label class="swatch" style="background: {{ c }};">
+        <input type="radio" name="color" value="{{ c }}"
+               {{ 'checked' if (habit and habit.color == c) or (not habit and loop.first) }}>
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="form-row">
+    <label>Icon</label>
+    <div class="icon-row">
+      {% for i in icons %}
+      <label class="icon-choice">
+        <input type="radio" name="icon" value="{{ i }}"
+               {{ 'checked' if (habit and habit.icon == i) or (not habit and loop.first) }}>
+        <span>{{ i }}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="form-row">
+    <label>Frequency</label>
+    <div class="freq-options">
+      <label class="freq-option">
+        <input type="radio" name="frequency_type" value="daily" onchange="updateFreqUI()"
+               {{ 'checked' if not habit or habit.frequency_type == 'daily' }}>
+        <div>
+          <div class="freq-title">Every Day</div>
+          <div class="muted small">Track it daily, no exceptions</div>
+        </div>
+      </label>
+      <label class="freq-option">
+        <input type="radio" name="frequency_type" value="custom_days" onchange="updateFreqUI()"
+               {{ 'checked' if habit and habit.frequency_type == 'custom_days' }}>
+        <div>
+          <div class="freq-title">Specific Days</div>
+          <div class="muted small">Choose which weekdays</div>
+        </div>
+      </label>
+      <label class="freq-option">
+        <input type="radio" name="frequency_type" value="weekly_target" onchange="updateFreqUI()"
+               {{ 'checked' if habit and habit.frequency_type == 'weekly_target' }}>
+        <div>
+          <div class="freq-title">X Times / Week</div>
+          <div class="muted small">Flexible weekly target</div>
+        </div>
+      </label>
+    </div>
+  </div>
+
+  <div class="form-row" id="custom-days-row" style="display:none;">
+    <label>Which days?</label>
+    <div class="day-picker">
+      {% for wd in weekday_names %}
+      <label class="day-chip">
+        <input type="checkbox" name="custom_days" value="{{ loop.index0 }}"
+               {{ 'checked' if habit and loop.index0 in habit.custom_days_list }}>
+        <span>{{ wd }}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="form-row" id="weekly-target-row" style="display:none;">
+    <label>Times per week</label>
+    <input type="number" name="weekly_target" min="1" max="7"
+           value="{{ habit.weekly_target if habit else 3 }}">
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">{{ 'Save Changes' if habit else 'Create Habit' }}</button>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-ghost">Cancel</a>
+  </div>
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateFreqUI() {
+  const val = document.querySelector('input[name="frequency_type"]:checked').value;
+  document.getElementById('custom-days-row').style.display = (val === 'custom_days') ? 'block' : 'none';
+  document.getElementById('weekly-target-row').style.display = (val === 'weekly_target') ? 'block' : 'none';
+}
+updateFreqUI();
+</script>
+{% endblock %}

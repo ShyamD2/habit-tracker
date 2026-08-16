@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}{{ habit.name }} · Habit Tracker{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="kicker"><a href="{{ url_for('dashboard') }}" class="back-link">&larr; Dashboard</a></div>
+    <h1><span class="title-icon">{{ habit.icon }}</span> {{ habit.name }}</h1>
+    {% if habit.description %}<p class="page-desc">{{ habit.description }}</p>{% endif %}
+  </div>
+  <div class="header-actions">
+    <a href="{{ url_for('habit_edit', habit_id=habit.id) }}" class="btn btn-ghost">Edit</a>
+    <form action="{{ url_for('habit_archive', habit_id=habit.id) }}" method="post" style="display:inline;">
+      <button class="btn btn-ghost" type="submit">Archive</button>
+    </form>
+    <form action="{{ url_for('habit_delete', habit_id=habit.id) }}" method="post" style="display:inline;"
+          onsubmit="return confirm('Delete this habit and all its history? This cannot be undone.');">
+      <button class="btn btn-danger" type="submit">Delete</button>
+    </form>
+  </div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-val" style="color: {{ habit.color }};">{{ streak.current }}</div>
+    <div class="stat-label">Current Streak</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val accent-purple">{{ streak.best }}</div>
+    <div class="stat-label">Best Streak</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val accent-green">{{ stats7.rate }}%</div>
+    <div class="stat-label">Last 7 Days</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val accent-yellow">{{ stats30.rate }}%</div>
+    <div class="stat-label">Last 30 Days</div>
+  </div>
+</div>
+
+<div class="section-block">
+  <h2 class="section-title">Consistency Heatmap</h2>
+  <div class="heatmap-wrap">
+    <div class="heatmap-daylabels">
+      {% for wd in weekday_names %}<div class="heatmap-daylabel">{{ wd[0] }}</div>{% endfor %}
+    </div>
+    <div class="heatmap-grid">
+      {% for week in heatmap_weeks %}
+      <div class="heatmap-col">
+        {% for day in week %}
+        <div class="heatmap-cell {{ 'completed' if day.completed }} {{ 'future' if day.future }} {{ 'off-schedule' if not day.scheduled and not day.completed }}"
+             style="{% if day.completed %}background: {{ habit.color }};{% endif %}"
+             title="{{ day.date }}{{ ' — done' if day.completed }}">
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="heatmap-legend">
+    <span>Less</span>
+    <div class="legend-cell off-schedule"></div>
+    <div class="legend-cell"></div>
+    <div class="legend-cell" style="background: {{ habit.color }}55;"></div>
+    <div class="legend-cell" style="background: {{ habit.color }};"></div>
+    <span>More</span>
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="section-block">
+    <h2 class="section-title">Log Today</h2>
+    <div class="log-card">
+      <button
+        class="check-circle large {{ 'checked' if habit.today_entry and habit.today_entry.completed }}"
+        data-habit-id="{{ habit.id }}"
+        data-date="{{ habit.today_entry.date if habit.today_entry else '' }}"
+        id="today-check"
+        onclick="toggleToday(this, '{{ habit.id }}')">
+        <span class="check-mark">&#10003;</span>
+      </button>
+      <div>
+        <div class="log-title">Mark today complete</div>
+        <div class="muted">Target: {{ habit.target_quantity }} {{ habit.unit }}</div>
+      </div>
+    </div>
+  </div>
+
+  {% if badges %}
+  <div class="section-block">
+    <h2 class="section-title">Badges Earned</h2>
+    <div class="badge-row vertical">
+      {% for b in badges %}
+      <div class="badge-chip">
+        <span class="badge-icon">{{ b.icon }}</span>
+        <div>
+          <div class="badge-title">{{ b.title }}</div>
+          <div class="badge-sub">{{ b.earned_at[:10] }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="section-block">
+  <h2 class="section-title">Recent History</h2>
+  <table class="data-table">
+    <thead><tr><th>Date</th><th>Status</th><th>Quantity</th><th>Note</th></tr></thead>
+    <tbody>
+      {% for e in recent_entries %}
+      <tr>
+        <td>{{ e.date }}</td>
+        <td>{% if e.completed %}<span class="status-done">Done</span>{% else %}<span class="status-skip">Skipped</span>{% endif %}</td>
+        <td>{{ e.quantity }} {{ habit.unit }}</td>
+        <td class="muted">{{ e.note or '—' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="muted">No entries yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function toggleToday(el, habitId) {
+  const today = new Date().toISOString().slice(0,10);
+  el.classList.add('loading');
+  const res = await fetch('/api/checkin', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({habit_id: habitId, date: today})
+  });
+  const data = await res.json();
+  el.classList.toggle('checked', data.completed);
+  el.classList.remove('loading');
+  if (data.newly_earned && data.newly_earned.length) {
+    setTimeout(() => location.reload(), 600);
+  }
+}
+</script>
+{% endblock %}

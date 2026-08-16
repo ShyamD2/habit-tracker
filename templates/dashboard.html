@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · Habit Tracker{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="kicker">{{ today }}</div>
+    <h1>Today's Habits</h1>
+  </div>
+  <a href="{{ url_for('habit_new') }}" class="btn btn-primary">+ New Habit</a>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-val">{{ stats.completed_today }}<span class="stat-of">/{{ stats.scheduled_today }}</span></div>
+    <div class="stat-label">Completed Today</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val accent-purple">{{ stats.current_streak_sum }}</div>
+    <div class="stat-label">Combined Current Streaks</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val accent-green">{{ stats.best_overall_streak }}</div>
+    <div class="stat-label">Best Streak Ever</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val accent-yellow">{{ stats.avg_completion_rate }}%</div>
+    <div class="stat-label">30-Day Completion Rate</div>
+  </div>
+</div>
+
+{% if not habits %}
+<div class="empty-state">
+  <div class="empty-icon">&#127793;</div>
+  <h3>No habits yet</h3>
+  <p>Create your first habit to start building streaks.</p>
+  <a href="{{ url_for('habit_new') }}" class="btn btn-primary">+ Create a Habit</a>
+</div>
+{% endif %}
+
+<div class="habit-list">
+  {% for h in habits %}
+  <div class="habit-row" style="--habit-color: {{ h.color }};">
+    <div class="habit-check-wrap">
+      <button
+        class="check-circle {{ 'checked' if h.today_entry and h.today_entry.completed else '' }} {{ 'not-scheduled' if not h.scheduled_today }}"
+        data-habit-id="{{ h.id }}"
+        data-date="{{ today }}"
+        onclick="toggleHabit(this)">
+        <span class="check-mark">&#10003;</span>
+      </button>
+    </div>
+    <a href="{{ url_for('habit_detail', habit_id=h.id) }}" class="habit-info">
+      <div class="habit-icon">{{ h.icon }}</div>
+      <div class="habit-text">
+        <div class="habit-name">{{ h.name }}</div>
+        <div class="habit-meta">
+          <span class="pill" style="background: {{ h.color }}22; color: {{ h.color }};">{{ h.category }}</span>
+          {% if not h.scheduled_today %}<span class="muted">Not scheduled today</span>{% endif %}
+          {% if h.target_quantity > 1 %}<span class="muted">Target: {{ h.target_quantity }} {{ h.unit }}</span>{% endif %}
+        </div>
+      </div>
+    </a>
+    <div class="habit-streak">
+      <div class="flame {{ 'lit' if h.streak.current > 0 }}">&#128293;</div>
+      <div class="streak-num">{{ h.streak.current }}</div>
+    </div>
+    <div class="habit-rate">
+      <div class="mini-ring" style="--pct: {{ h.stats30.rate }};">
+        <span>{{ h.stats30.rate }}%</span>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if recent_achievements %}
+<div class="section-block">
+  <h2 class="section-title">Recent Achievements</h2>
+  <div class="badge-row">
+    {% for b in recent_achievements %}
+    <div class="badge-chip">
+      <span class="badge-icon">{{ b.icon }}</span>
+      <div>
+        <div class="badge-title">{{ b.title }}</div>
+        <div class="badge-sub">{{ b.habit_name }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function toggleHabit(el) {
+  const habitId = el.dataset.habitId;
+  const date = el.dataset.date;
+  el.classList.add('loading');
+  try {
+    const res = await fetch('/api/checkin', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({habit_id: habitId, date: date})
+    });
+    const data = await res.json();
+    el.classList.toggle('checked', data.completed);
+    const row = el.closest('.habit-row');
+    const streakNum = row.querySelector('.streak-num');
+    const flame = row.querySelector('.flame');
+    streakNum.textContent = data.streak.current;
+    flame.classList.toggle('lit', data.streak.current > 0);
+    if (data.newly_earned && data.newly_earned.length) {
+      showToast('\uD83C\uDFC6 ' + data.newly_earned.join(', '));
+    }
+  } catch (e) {
+    console.error(e);
+  }
+  el.classList.remove('loading');
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3200);
+}
+</script>
+{% endblock %}

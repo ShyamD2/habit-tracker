@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Analytics · Habit Tracker{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="kicker">Insights</div>
+    <h1>Analytics</h1>
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="section-block">
+    <h2 class="section-title">Weekly Completions</h2>
+    <div class="chart-card"><canvas id="trendChart"></canvas></div>
+  </div>
+  <div class="section-block">
+    <h2 class="section-title">Habits by Category</h2>
+    <div class="chart-card"><canvas id="categoryChart"></canvas></div>
+  </div>
+</div>
+
+<div class="section-block">
+  <h2 class="section-title">Per-Habit Performance</h2>
+  <table class="data-table">
+    <thead><tr><th>Habit</th><th>Current Streak</th><th>Best Streak</th><th>30-Day Rate</th><th></th></tr></thead>
+    <tbody>
+      {% for row in per_habit %}
+      <tr>
+        <td>
+          <span class="table-icon">{{ row.habit.icon }}</span>
+          <span style="color: {{ row.habit.color }}; font-weight:600;">{{ row.habit.name }}</span>
+        </td>
+        <td>{{ row.streak.current }} &#128293;</td>
+        <td>{{ row.streak.best }}</td>
+        <td>
+          <div class="bar-track"><div class="bar-fill" style="width: {{ row.stats30.rate }}%; background: {{ row.habit.color }};"></div></div>
+          <span class="muted small">{{ row.stats30.rate }}%</span>
+        </td>
+        <td><a href="{{ url_for('habit_detail', habit_id=row.habit.id) }}" class="btn btn-ghost btn-sm">View</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">No habits yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="section-block">
+  <h2 class="section-title">All Achievements ({{ all_badges|length }})</h2>
+  {% if all_badges %}
+  <div class="badge-row">
+    {% for b in all_badges %}
+    <div class="badge-chip" style="border-color: {{ b.habit_color }}55;">
+      <span class="badge-icon">{{ b.icon }}</span>
+      <div>
+        <div class="badge-title">{{ b.title }}</div>
+        <div class="badge-sub">{{ b.habit_name }} &middot; {{ b.earned_at[:10] }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">No achievements earned yet — check in on a habit to start earning badges!</p>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const trendLabels = {{ trend | map(attribute='week') | list | tojson }};
+const trendData = {{ trend | map(attribute='count') | list | tojson }};
+const catLabels = {{ breakdown | map(attribute='category') | list | tojson }};
+const catData = {{ breakdown | map(attribute='count') | list | tojson }};
+
+new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: {
+    labels: trendLabels,
+    datasets: [{
+      label: 'Completions',
+      data: trendData,
+      borderColor: '#00d4ff',
+      backgroundColor: 'rgba(0,212,255,0.12)',
+      fill: true,
+      tension: 0.35,
+      pointBackgroundColor: '#00d4ff',
+      pointRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+      y: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' }, beginAtZero: true }
+    }
+  }
+});
+
+new Chart(document.getElementById('categoryChart'), {
+  type: 'doughnut',
+  data: {
+    labels: catLabels,
+    datasets: [{
+      data: catData,
+      backgroundColor: ['#00d4ff','#8b5cf6','#22c55e','#eab308','#ef4444','#ec4899','#3b82f6','#14b8a6'],
+      borderColor: '#0f172a',
+      borderWidth: 3,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1' } } }
+  }
+});
+</script>
+{% endblock %}
